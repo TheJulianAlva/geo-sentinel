@@ -8,18 +8,20 @@ GeoSentinel es una plataforma web y API móvil diseñada para proporcionar segur
 - **Dead Man's Switch:** Temporizadores de seguridad manejados por el servidor que emiten alertas automáticas si un excursionista no reporta el fin de su expedición dentro del Tiempo Máximo Estimado (TME).
 - **Rescue Dashboard:** Panel web táctico en tiempo real para agentes de rescate, alimentado por WebSockets para una notificación y visualización instantánea de alertas en el mapa.
 
-## 🏗️ Arquitectura y Stack Tecnológico
+## Arquitectura y Stack Tecnológico
 
-El sistema opera bajo una arquitectura cliente-servidor:
-- **Cliente Móvil:** Interfaz rápida de bajo consumo para excursionistas, diseñada para requerir la mínima interacción y tolerar la conectividad intermitente.
-- **Backend (API):** Servidor centralizado responsable de la lógica de negocio, validaciones geoespaciales y gestión de *workers* para los temporizadores.
-- **Frontend (Dashboard):** Cliente web optimizado con vista de mapa y bitácora de eventos, priorizando la baja latencia.
+El sistema opera bajo una arquitectura **Cliente-Servidor de N Capas**, adoptando una estrategia *Offline-First* y comunicación asíncrona bidireccional. 
+
+- **Capa de Presentación:** Controlada por interfaces separadas de acuerdo al rol de usuario.
+- **Capa de Dominio (Node.js):** Centraliza la lógica de negocio a través de servicios como sincronización de estado, validaciones de rutas y la gestión de alertas de emergencias.
+- **Capa de Gestión de Datos:** Provee interfaces a la base de datos PostgreSQL/PostGIS.
 
 ### Tecnologías Clave
 
-- **Base de Datos:** PostgreSQL 14+ con la extensión **PostGIS** para cálculos y requerimientos espaciales.
-- **Caché y Colas de Tareas:** **Redis** para la ejecución de procesos en segundo plano.
-- **Tiempo Real:** **WebSockets** para enviar datos y alertas instantáneas al panel de rescate.
+- **Frontend (Móvil y Web):** Construido con **Flutter** (con el lenguaje Dart). Se apoya en **BLoC** para el aislamiento del estado, **Isar Database** para conservar localmente los registros ('checkpoints') como estrategia *Offline*, y **`flutter_map`** para la visualización geoespacial.
+- **Backend (API Central):** App **Node.js** implementada sobre **Express.js**. Maneja alertas de tiempo real usando **Socket.io** y procesa el temporizador de emergencias ("Dead Man's Switch") a través de **BullMQ**.
+- **Almacén Principal:** **PostgreSQL** alojado bajo el ecosistema de **Supabase**, nutriéndose explícitamente de la funcionalidad y precisión que provee el motor **PostGIS**.
+- **Caché y Memoria Rápida:** Servidores **Redis** de respaldo para las colas en segundo plano.
 
 ## Privacidad y Seguridad
 
@@ -27,18 +29,20 @@ Priorizamos la privacidad del usuario: las ubicaciones exactas de los excursioni
 
 ## Roles de Usuario
 
-1. **Excursionista:** Establece parámetros iniciales (ej. TME), interactúa de manera rápida mediante interacciones simples como presionar un botón durante la ruta.
+1. **Excursionista:** Establece parámetros iniciales, interactúa de manera rápida mediante interacciones simples como presionar un botón durante la ruta.
 2. **Agente de Rescate:** Usuario administrador del Dashboard, recibe notificaciones libres de ruido visual y de fácil interpretación para accionar un rescate si es necesario.
 
 ## Desarrollo y Configuración Local
 
-*(Instrucciones en construcción dependientes del entorno de programación específico)*
+*(Instrucciones de instalación sujetas a cada componente de la plataforma)*
 
-### Prerrequisitos
-- Instalar PostgreSQL (versión >= 14) y habilitar su extensión PostGIS.
-- Instalar y ejecutar el servidor Redis.
+### Prerrequisitos Comunes
+- Instalar el **SDK de Flutter** para inicializar los clientes.
+- Disponer del runtime **Node.js**.
+- Acceso a una base de datos **PostgreSQL** con la extensión **PostGIS** (se recomienda usar **Supabase** según el estándar del proyecto).
+- Instalar y ejecutar el gestor de caché temporal **Redis**.
 
 ---
 
 **Autor:** Julián Alva  
-**Versión Inicial:** 1.0 (MVP)
+**Versión Inicial:** 0.9.1

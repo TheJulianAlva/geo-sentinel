@@ -1,6 +1,6 @@
 # Software Requirements Specification
 ## Proyecto: GeoSentinel
-**Versión:** 1.0
+**Versión:** 0.9.1
 **Autor:** Julián Alva
 **Fecha:** Abril 2026
 
