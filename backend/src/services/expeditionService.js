@@ -1,13 +1,21 @@
 /**
  * @fileoverview Service layer for Expedition business logic.
- * Responsible for creating and updating expeditions in the database.
- * Corresponds to the requirements REQ-2.1 and REQ-2.2 of the SRS.
+ * Responsible for creating, updating, and scheduling safety timeouts for expeditions.
+ * Corresponds to requirements REQ-2.1, REQ-2.2, and REQ-2.3 of the SRS.
  * @module services/expeditionService
  */
 
 'use strict';
 
 const supabase = require('../lib/supabaseClient');
+const { expeditionQueue } = require('../workers/expeditionQueue');
+
+/**
+ * Grace period added on top of the TME before triggering the Dead Man's Switch.
+ * Avoids false positives due to minor network delays on the hiker's device.
+ * @constant {number}
+ */
+const GRACE_PERIOD_MS = 60 * 1000; // 1 minute
 
 /**
  * @typedef {Object} ExpeditionPayload
@@ -25,16 +33,18 @@ const supabase = require('../lib/supabaseClient');
  */
 
 /**
- * Creates a new expedition in the database.
+ * Creates a new expedition in the database and schedules a Dead Man's Switch
+ * timeout job that will trigger an alert if the expedition is not finished in time.
  *
  * @async
  * @param {ExpeditionPayload} payload - The expedition data submitted by the explorer.
  * @returns {Promise<Expedition>} The newly created expedition record.
- * @throws {Error} If the database insertion fails.
+ * @throws {Error} If the database insertion or job scheduling fails.
  */
 async function startExpedition(payload) {
   const { user_id, expected_end_time } = payload;
 
+  // 1. Insert the expedition record.
   const { data, error } = await supabase
     .from('expeditions')
     .insert({ user_id, expected_end_time, status: 'active' })
@@ -43,11 +53,30 @@ async function startExpedition(payload) {
 
   if (error) throw new Error(`Failed to start expedition: ${error.message}`);
 
+  // 2. Calculate the delay for the Dead Man's Switch job.
+  const expectedEndMs = new Date(data.expected_end_time).getTime();
+  const nowMs = Date.now();
+  const delayMs = Math.max(expectedEndMs - nowMs + GRACE_PERIOD_MS, 0);
+
+  // 3. Schedule the timeout job with a unique ID to prevent duplicates.
+  await expeditionQueue.add(
+    'checkExpeditionTimeout',
+    { expeditionId: data.id },
+    {
+      delay: delayMs,
+      jobId: `dms-${data.id}`, // Idempotent: prevents double-scheduling the same expedition.
+    }
+  );
+
+  const delayMinutes = Math.round(delayMs / 60_000);
+  console.log(`[DMS] Scheduled Dead Man's Switch for expedition ${data.id} in ~${delayMinutes} min.`);
+
   return data;
 }
 
 /**
- * Marks an active expedition as 'finished'.
+ * Marks an active expedition as 'finished', preventing the Dead Man's Switch
+ * from triggering a false alarm.
  *
  * @async
  * @param {string} expeditionId - The UUID of the expedition to finalize.
