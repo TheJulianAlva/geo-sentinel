@@ -67,4 +67,22 @@ async function finish(req, res) {
   }
 }
 
-module.exports = { start, finish };
+/**
+ * Handles GET /api/expeditions
+ * Returns all non-finished expeditions for the Rescue Dashboard.
+ *
+ * @async
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {Promise<void>}
+ */
+async function list(req, res) {
+  try {
+    const expeditions = await expeditionService.listActiveExpeditions();
+    return res.status(200).json(expeditions);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+module.exports = { start, finish, list };

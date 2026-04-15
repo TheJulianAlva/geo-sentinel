@@ -103,7 +103,12 @@ deadMansSwitchWorker.on('failed', (job, err) => {
 });
 
 deadMansSwitchWorker.on('error', (err) => {
-  console.error(`[DMS] Worker encountered an error: ${err.message}`);
+  if (err.code === 'ECONNREFUSED') {
+    console.warn('[DMS] Redis is not reachable. Start it with: docker start redis-geo');
+    console.warn('[DMS] Worker will reconnect automatically once Redis is available.');
+  } else {
+    console.error(`[DMS] Worker error: ${err.message}`);
+  }
 });
 
 module.exports = deadMansSwitchWorker;

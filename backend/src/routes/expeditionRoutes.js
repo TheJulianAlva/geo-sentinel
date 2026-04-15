@@ -11,6 +11,13 @@ const expeditionController = require('../controllers/expeditionController');
 const router = Router();
 
 /**
+ * @route   GET /api/expeditions
+ * @desc    Returns all non-finished expeditions for the Rescue Dashboard.
+ * @access  Public (future: Protected via Supabase Auth JWT)
+ */
+router.get('/', expeditionController.list);
+
+/**
  * @route   POST /api/expeditions/start
  * @desc    Starts a new expedition for an explorer.
  * @access  Public (future: Protected via Supabase Auth JWT)

@@ -99,4 +99,32 @@ async function finishExpedition(expeditionId, userId) {
   return data;
 }
 
-module.exports = { startExpedition, finishExpedition };
+/**
+ * Lists all non-finished expeditions, joined with the explorer's display name.
+ * Used by the Rescue Dashboard to populate the active expeditions panel.
+ *
+ * @async
+ * @returns {Promise<Object[]>} Array of active/delayed/critical expedition records.
+ * @throws {Error} If the database query fails.
+ */
+async function listActiveExpeditions() {
+  const { data, error } = await supabase
+    .from('expeditions')
+    .select(`
+      id,
+      user_id,
+      expected_end_time,
+      actual_end_time,
+      status,
+      created_at,
+      profiles ( full_name )
+    `)
+    .neq('status', 'finished')
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(`Failed to list expeditions: ${error.message}`);
+
+  return data;
+}
+
+module.exports = { startExpedition, finishExpedition, listActiveExpeditions };
