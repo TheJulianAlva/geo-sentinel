@@ -1,0 +1,34 @@
+/**
+ * @fileoverview Route definitions for the Expedition resource.
+ * @module routes/expeditionRoutes
+ */
+
+'use strict';
+
+const { Router } = require('express');
+const expeditionController = require('../controllers/expeditionController');
+
+const router = Router();
+
+/**
+ * @route   GET /api/expeditions
+ * @desc    Returns all non-finished expeditions for the Rescue Dashboard.
+ * @access  Public (future: Protected via Supabase Auth JWT)
+ */
+router.get('/', expeditionController.list);
+
+/**
+ * @route   POST /api/expeditions/start
+ * @desc    Starts a new expedition for an explorer.
+ * @access  Public (future: Protected via Supabase Auth JWT)
+ */
+router.post('/start', expeditionController.start);
+
+/**
+ * @route   POST /api/expeditions/:id/finish
+ * @desc    Marks an active expedition as finished.
+ * @access  Public (future: Protected via Supabase Auth JWT)
+ */
+router.post('/:id/finish', expeditionController.finish);
+
+module.exports = router;
